@@ -6,7 +6,7 @@ const API_URL = "https://api.line.me/v2/oauth/accessToken";
 $data = array(
     'grant_type' => 'client_credentials',
     'client_id' => 1653864146,
-    'client_secret' => 94062b4fc779ff2e28d965c45662ac35,
+    'client_secret' => "94062b4fc779ff2e28d965c45662ac35",
 );
 
 $header = array(
