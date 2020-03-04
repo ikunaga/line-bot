@@ -29,7 +29,7 @@ foreach ($events as $event) {
    //画像を返信
    replyImageMessage($bot, $event->getReplyToken(), 'https://' . 
    $_SERVER['HTTP_HOST'] . 
-   '/img/tsol_logo.jpg',
+   '/imgs/tsol_logo.jpg',
    'https://' . $_SERVER['HTTP_HOST'] . 
    '/imgs/tower.jpg');
 }
