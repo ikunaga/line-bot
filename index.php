@@ -1,30 +1,22 @@
 <?php
 
-//リクエスト先URL
-const API_URL = "https://api.line.me/v2/oauth/accessToken";
+//composerでインストールしたライブラリを読み込み
+require_once __DIR__ . '/vendor/autoload.php';
 
-$data = array(
-    'grant_type' => 'client_credentials',
-    'client_id' => 1653864146,
-    'client_secret' => "94062b4fc779ff2e28d965c45662ac35",
-);
+$inputString = file_get_contents('php://input');
+error_log($inputString);
 
-$header = array(
-    "Content-Type: application/x-www-form-urlencoded",
-);
+// //アクセストークンを使いCurlHTTPClientをインスタンス化
+// $httpClient = new \LINE\LINEBot\HTTPClient\CurlHTTPClient(getenv('CHANNEL_ACCESS_TOKEN'));
 
-$options = array('http' => array(
-    'method' => 'POST',
-    'header'  => implode("\r\n", $header),
-    'content' => http_build_query($data)
-));
+// $bot = new \LINE\LINEBot($httpClient, ['channelSecret' => getenv('CHANNEL_SECRET')]);
 
-$response = file_get_contents(
-    API_URL,
-    false,
-    stream_context_create($options)
-);
+// $signature = $_SERVER['HTTP_' . \LINE\LINEBot\Constant\HTTPHeader::LINE_SIGNATURE];
 
-//レスポンスのjsonからtokenを取得
-$access_token = json_decode($response)->access_token;
+// $events = $bot->parseEventRequest(file_get_contents('php://input'),$signature);
+
+// foreach ($events as $event) {
+//    $bot->replyText($event->getReplyToken(), 'TextMessage');
+// }
+
 ?>
