@@ -1,37 +1,48 @@
 <?php
 
-//composerでインストールしたライブラリを読み込み
-require_once __DIR__ . '/vendor/autoload.php';
+//[1]署名の検証
+   //composerでインストールしたライブラリを読み込み
+   require_once __DIR__ . '/vendor/autoload.php';
 
-// $inputString = file_get_contents('php://input');
-// error_log($inputString);
+   //アクセストークンを使いCurlHTTPClientをインスタンス化
+   $httpClient = new \LINE\LINEBot\HTTPClient\CurlHTTPClient(getenv('CHANNEL_ACCESS_TOKEN'));
 
-//アクセストークンを使いCurlHTTPClientをインスタンス化
-$httpClient = new \LINE\LINEBot\HTTPClient\CurlHTTPClient(getenv('CHANNEL_ACCESS_TOKEN'));
+   //CurlHTTPClientとシークレットを使いLINEbotをインスタンス化
+   $bot = new \LINE\LINEBot($httpClient, ['channelSecret' => getenv('CHANNEL_SECRET')]);
 
-//CurlHTTPClientとシークレットを使いLINEbotをインスタンス化
-$bot = new \LINE\LINEBot($httpClient, ['channelSecret' => getenv('CHANNEL_SECRET')]);
+   //LINEMessagingAPIがリクエストに付与した署名を取得
+   $signature = $_SERVER['HTTP_' . \LINE\LINEBot\Constant\HTTPHeader::LINE_SIGNATURE];
 
-//LINEMessagingAPIがリクエストに付与した署名を取得
-$signature = $_SERVER['HTTP_' . \LINE\LINEBot\Constant\HTTPHeader::LINE_SIGNATURE];
+   //署名が正当かチェック。正当であればリクエストをパースし配列へ
+   try {
+      $events = $bot->parseEventRequest(file_get_contents('php://input'),$signature);
 
-//署名が正当かチェック。正当であればリクエストをパースし配列へ
-$events = $bot->parseEventRequest(file_get_contents('php://input'),$signature);
+   } catch(\LINE\LINEBot\Exception\InvalidSignatureException $e) {
+      error_log('parseEventRequest failed. InvalidSignatureException => '.var_export($e, true));
+   } catch(\LINE\LINEBot\Exception\UnknownEventTypeException $e) {
+      error_log('parseEventRequest failed. UnknownEventTypeException => '.var_export($e, true));
+   } catch(\LINE\LINEBot\Exception\UnknownMessageTypeException $e) {
+      error_log('parseEventRequest failed. UnknownMessageTypeException => '.var_export($e, true));
+   } catch(\LINE\LINEBot\Exception\InvalidEventRequestException $e) {
+      error_log('parseEventRequest failed. InvalidEventRequestException => '.var_export($e, true));
+   }
+
+//[2]メッセージタイプのフィルタ
 
 // 配列に格納された各イベントをループで処理
 foreach ($events as $event) {
    // テキストを返信
-   // $bot->replyText($event->getReplyToken(), 'TextMessage');
+   $bot->replyText($event->getReplyToken(), $event->getText());
  
    //テキストを返信し次のイベントの処理へ
    // replyTextMessage($bot, $event->getReplyToken(), 'TextMessage');
 
    //画像を返信
-   replyImageMessage($bot, $event->getReplyToken(), 'https://' . 
-   $_SERVER['HTTP_HOST'] . 
-   '/imgs/tsol_logo.jpg',
-   'https://' . $_SERVER['HTTP_HOST'] . 
-   '/imgs/tower.jpg');
+   // replyTextMessage($bot, $event->getReplyToken(), 'https://' . 
+   // $_SERVER['HTTP_HOST'] . 
+   // '/imgs/tsol_logo.jpg',
+   // 'https://' . $_SERVER['HTTP_HOST'] . 
+   // '/imgs/tower.jpg');
 }
 
 
