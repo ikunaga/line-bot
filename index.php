@@ -32,8 +32,15 @@
 // 配列に格納された各イベントをループで処理
 foreach ($events as $event) {
    // テキストを返信
-   $bot->replyText($event->getReplyToken(), $event->getText());
+   // $bot->replyText($event->getReplyToken(), $event->getText());
  
+               //返信メッセージ
+               $return_message_text = "「" . $message_text . "」なの？";
+
+               //返信実行
+               $this->sending_messages($accessToken, $replyToken, $message_type, $return_message_text);
+
+
    //テキストを返信し次のイベントの処理へ
    // replyTextMessage($bot, $event->getReplyToken(), 'TextMessage');
 
