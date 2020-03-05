@@ -1,79 +1,59 @@
 <?php
+defined('BASEPATH') OR exit('No direct script access allowed');
 
-//[1]署名の検証
-   //composerでインストールしたライブラリを読み込み
-   require_once __DIR__ . '/vendor/autoload.php';
+class Linebot extends CI_Controller {
 
-   //アクセストークンを使いCurlHTTPClientをインスタンス化
-   $httpClient = new \LINE\LINEBot\HTTPClient\CurlHTTPClient(getenv('CHANNEL_ACCESS_TOKEN'));
+    public function index()
+    {
+        $accessToken = 'Ifx/DI3phSRtgW8Isa5AZVfzBizBDu4TEPRtyORDEqp3FaCcIWYXg4CubsYgfN0Iqm8pwOP4NMvNg+DeIDz0N8VxT3HArA2+kWoLDDGv1MwAcPaTVnhgKSVrdwrwAArb8LsWswOoHADrs/4i0fIdewdB04t89/1O/w1cDnyilFU=';
 
-   //CurlHTTPClientとシークレットを使いLINEbotをインスタンス化
-   $bot = new \LINE\LINEBot($httpClient, ['channelSecret' => getenv('CHANNEL_SECRET')]);
+        //ユーザーからのメッセージ取得
+        $json_string = file_get_contents('php://input');
 
-   //LINEMessagingAPIがリクエストに付与した署名を取得
-   $signature = $_SERVER['HTTP_' . \LINE\LINEBot\Constant\HTTPHeader::LINE_SIGNATURE];
+        if($json_string){
+            $json_object = json_decode($json_string);
+            $userId = $json_object->{"events"}[0]->{"source"}->{"userId"};
 
-   //署名が正当かチェック。正当であればリクエストをパースし配列へ
-   try {
-      $events = $bot->parseEventRequest(file_get_contents('php://input'),$signature);
+            //取得データ
+            $replyToken = $json_object->{"events"}[0]->{"replyToken"};        //返信用トークン
+            $message_type = $json_object->{"events"}[0]->{"message"}->{"type"};    //メッセージタイプ
+            $message_text = $json_object->{"events"}[0]->{"message"}->{"text"};    //メッセージ内容
 
-   } catch(\LINE\LINEBot\Exception\InvalidSignatureException $e) {
-      error_log('parseEventRequest failed. InvalidSignatureException => '.var_export($e, true));
-   } catch(\LINE\LINEBot\Exception\UnknownEventTypeException $e) {
-      error_log('parseEventRequest failed. UnknownEventTypeException => '.var_export($e, true));
-   } catch(\LINE\LINEBot\Exception\UnknownMessageTypeException $e) {
-      error_log('parseEventRequest failed. UnknownMessageTypeException => '.var_export($e, true));
-   } catch(\LINE\LINEBot\Exception\InvalidEventRequestException $e) {
-      error_log('parseEventRequest failed. InvalidEventRequestException => '.var_export($e, true));
-   }
+            //メッセージタイプが「text」以外のときは何も返さず終了
+            if($message_type != "text") exit;
 
-//[2]メッセージタイプのフィルタ
+            //返信メッセージ
+            $return_message_text = "「" . $message_text . "」なの？";
 
-// 配列に格納された各イベントをループで処理
-foreach ($events as $event) {
-   // テキストを返信
-   // $bot->replyText($event->getReplyToken(), $event->getText());
- 
-               //返信メッセージ
-               $return_message_text = "「" . $message_text . "」なの？";
+            //返信実行
+            $this->sending_messages($accessToken, $replyToken, $message_type, $return_message_text);
+        }
+    }
+    //メッセージの送信
+    private function sending_messages($accessToken, $replyToken, $message_type, $return_message_text){
+        //レスポンスフォーマット
+        $response_format_text = [
+            "type" => $message_type,
+            "text" => $return_message_text
+        ];
 
-               //返信実行
-               $this->sending_messages($accessToken, $replyToken, $message_type, $return_message_text);
+        //ポストデータ
+        $post_data = [
+            "replyToken" => $replyToken,
+            "messages" => [$response_format_text]
+        ];
 
-
-   //テキストを返信し次のイベントの処理へ
-   // replyTextMessage($bot, $event->getReplyToken(), 'TextMessage');
-
-   //画像を返信
-   // replyTextMessage($bot, $event->getReplyToken(), 'https://' . 
-   // $_SERVER['HTTP_HOST'] . 
-   // '/imgs/tsol_logo.jpg',
-   // 'https://' . $_SERVER['HTTP_HOST'] . 
-   // '/imgs/tower.jpg');
+        //curl実行
+        $ch = curl_init("https://api.line.me/v2/bot/message/reply");
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($post_data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Content-Type: application/json; charser=UTF-8',
+            'Authorization: Bearer ' . $accessToken
+        ));
+        $result = curl_exec($ch);
+        curl_close($ch);
+    }
 }
-
-
-
-//テキストを返信。引数はLINEbot、返信先、テキスト
-function replyTextMessage($bot, $replyToken, $text) {
-   //返信を行いレスポンスを取得
-   //TextMessageBuilderの引数はテキスト
-   $response = $bot->replyMessage($replyToken, new \LINE\LINEBot\MessageBuilder\TextMessageBuilder($text));
-
-   //レスポンスが異常な場合
-   if (!$response->isSucceeded()) {
-      //エラー内容を出力
-      error_log('Failed!'. $response->getHTTPStatus . '　' . $response->getRawBody());
-
-   }
-}
-
-//画像を返信。引数はLINEBot、返信先、画像URL、サムネイルURL
-function replyImageMessage($bot, $replyToken, $originalImageUrl, $previewImageUrl) {
-   //ImageMessageBuilderの引数は画像URL、サムネイルURL
-   $response = $bot->replyMessage($replyToken, new \LINE\LINEBot\MessageBuilder\ImageMessageBuilder($originalImageUrl, $previewImageUrl));
-   if (!$response->isSucceeded()) {
-      error_log('Failed!'. $response->getHTTPStatus . '　' . $response->getRawBody());
-   }
-}
-?>
