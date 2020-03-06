@@ -15,7 +15,7 @@ $message_text = $json_object->{"events"}[0]->{"message"}->{"text"};    //メッ�
 if($message_type != "text") exit;
  
 //返信メッセージ
-$return_message_text = $message_text . "でしょうね★";
+$return_message_text = $message_text . "でしょうね(*•ω•*)";
  
 //返信実行
 sending_messages($accessToken, $replyToken, $message_type, $return_message_text);
